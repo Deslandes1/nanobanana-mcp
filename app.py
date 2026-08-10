@@ -91,53 +91,33 @@ st.markdown("""
         width: 100%;
         display: block;
     }
+    .closing-cards {
+        background: #f0f7fe;
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid #0066cc;
+        margin-top: 20px;
+    }
+    .closing-cards h4 {
+        color: #004488;
+        margin-top: 0;
+    }
+    .closing-cards p {
+        margin: 6px 0;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # ---------- TITLE ----------
-st.markdown('<div class="main-title">🎬 HCC – Video Generator</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Powered by Gemini AI · Create cinematic CEO introduction videos</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🎬 HCC – CEO Introduction Video</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Jean Charles RJ presents Haiti Culture Connection</div>', unsafe_allow_html=True)
 
-# ---------- SCRIPT & PROMPT ----------
+# ---------- SCRIPT ----------
 SCRIPT = """HCC : Haiti Culture Connection. Le premier label de l'histoire du HMI. Une initiative novatrice pour la jeunesse productive d'Haïti. Désormais, les jeunes talents haïtiens ont un recours lorsqu'il s'agit de financer leurs projets artistiques @HCC. Avec une équipe engagée dédiée au mentorat des œuvres, à la promotion de notre patrimoine historique et culturel, et au marketing de la culture haïtienne. HCC vise à établir une connexion directe entre tous les artistes haïtiens, en reliant leurs entreprises et entreprises évoluant dans le secteur des arts afin qu'ils grandissent ensemble. Cette connexion directe facilitera les échanges commerciaux au sein du HMI et rapprochera également les artistes et le public - une connexion qui guidera tous les jeunes talents vers leurs objectifs. HCC est le nouveau patrimoine structurel de la culture haïtienne. La culture est la preuve la plus tangible de l'existence de toutes les civilisations."""
 
-PROMPT = f"""
-Generate a high-end, professional cinematic video featuring Jean Charles RJ as the CEO of Haiti Culture Connection. 
-
-**Visual Style:**
-- Jean Charles RJ is wearing regular eyeglasses and a sleek black suit
-- He is sitting confidently at a desk in a modern, elegant office environment
-- A single laptop is open before him
-- In the background, the polished "Haiti Culture Connection" logo and subtle visual elements of Haitian historical monuments (like the Citadelle) are integrated
-- Professional lighting, cinematic quality, 16:9 aspect ratio
-
-**Audio/Speech:**
-- Jean Charles speaks fluently in French with an engaging and inspiring tone
-- He delivers the following script naturally:
-
-"{SCRIPT}"
-
-**Closing Cards (On-screen text):**
-- CEO: Jean Charles RJ
-- WhatsApp: +18094177808
-- Social Media: @HCC
-- Tagline: 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.
-
-**Requirements:**
-- High-resolution (1080p or higher)
-- Professional, corporate, inspirational tone
-- Smooth transitions
-- Subtle background music (elegant, inspiring)
-- The video should look like a professional corporate announcement from a major organization.
-"""
-
-# ---------- SIDEBAR: API KEY ----------
+# ---------- SIDEBAR ----------
 with st.sidebar:
-    st.markdown("## 🔑 Gemini API Key")
-    st.markdown("Enter your Google Gemini API key to generate the video.")
-    api_key = st.text_input("API Key", type="password", placeholder="Paste your API key here...")
-    st.markdown("---")
-    st.markdown("### 📋 Script Preview")
+    st.markdown("## 📋 Script Preview")
     with st.expander("Click to view the full script"):
         st.markdown(f'<div class="script-box">{SCRIPT}</div>', unsafe_allow_html=True)
     st.markdown("---")
@@ -146,6 +126,11 @@ with st.sidebar:
     st.markdown("**WhatsApp:** +18094177808")
     st.markdown("**Social Media:** @HCC")
     st.markdown("**Tagline:** 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.")
+    st.markdown("---")
+    st.markdown("### 🎬 Video Info")
+    st.markdown("**Source:** GitHub Repository")
+    st.markdown("**Format:** MP4")
+    st.markdown("**Size:** 2.62 MB")
 
 # ---------- MAIN CONTENT ----------
 col1, col2 = st.columns([2, 1])
@@ -153,112 +138,72 @@ col1, col2 = st.columns([2, 1])
 with col1:
     st.markdown("""
     <div class="info-box">
-        <h3>🎯 Generate Your Video</h3>
-        <p>This tool uses Google Gemini AI to generate a professional, cinematic video of Jean Charles RJ presenting Haiti Culture Connection.</p>
-        <p><strong>What you'll get:</strong></p>
+        <h3>🎥 CEO Introduction Video</h3>
+        <p>Watch Jean Charles RJ, CEO of Haiti Culture Connection, deliver a powerful presentation about the organization's mission and vision.</p>
+        <p><strong>Video features:</strong></p>
         <ul>
-            <li>High-quality cinematic video (1080p)</li>
-            <li>Jean Charles RJ speaking the full script in French</li>
-            <li>Professional office background with HCC logo & Haitian monuments</li>
+            <li>Jean Charles RJ in a professional office setting</li>
+            <li>Full script delivered in French</li>
+            <li>HCC logo and Haitian monuments in the background</li>
             <li>Closing cards with CEO info, WhatsApp, social media, and tagline</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
 
-    # Video generation button
-    if st.button("🎬 Generate Video", use_container_width=True):
-        if not api_key:
-            st.error("❌ Please enter your Gemini API key in the sidebar.")
-        else:
-            try:
-                # Configure Gemini
-                genai.configure(api_key=api_key)
-                
-                with st.spinner("🎬 Generating your video... This may take 1-3 minutes."):
-                    # Create the video generation request
-                    model = genai.GenerativeModel('gemini-2.0-flash-exp')
-                    
-                    # For video generation, we need to use the generate_content with video generation enabled
-                    # Note: Gemini video generation is still evolving; this uses the latest capabilities
-                    response = model.generate_content(
-                        PROMPT,
-                        generation_config=genai.types.GenerationConfig(
-                            response_modalities=["VIDEO"],
-                            temperature=0.7,
-                            max_output_tokens=2048,
-                        )
-                    )
-                    
-                    # Process the response
-                    if hasattr(response, 'candidates') and response.candidates:
-                        for candidate in response.candidates:
-                            if hasattr(candidate, 'content') and candidate.content:
-                                for part in candidate.content.parts:
-                                    if hasattr(part, 'inline_data') and part.inline_data:
-                                        video_data = part.inline_data.data
-                                        video_base64 = base64.b64encode(video_data).decode()
-                                        
-                                        st.markdown("### ✅ Video Generated Successfully!")
-                                        st.markdown("---")
-                                        
-                                        # Display the video
-                                        st.markdown(f"""
-                                        <div class="video-container">
-                                            <video controls autoplay>
-                                                <source src="data:video/mp4;base64,{video_base64}" type="video/mp4">
-                                                Your browser does not support the video tag.
-                                            </video>
-                                        </div>
-                                        """, unsafe_allow_html=True)
-                                        
-                                        # Download button
-                                        st.download_button(
-                                            label="⬇️ Download Video (MP4)",
-                                            data=video_data,
-                                            file_name="HCC_CEO_Jean_Charles_RJ.mp4",
-                                            mime="video/mp4",
-                                            use_container_width=True
-                                        )
-                                        
-                                        # Display closing cards info
-                                        st.markdown("---")
-                                        st.markdown("""
-                                        <div style="background: #f0f7fe; padding: 20px; border-radius: 12px; border: 1px solid #0066cc;">
-                                            <h4 style="color: #004488;">📋 Closing Cards Information</h4>
-                                            <p><strong>CEO:</strong> Jean Charles RJ</p>
-                                            <p><strong>WhatsApp:</strong> +18094177808</p>
-                                            <p><strong>Social Media:</strong> @HCC</p>
-                                            <p><strong>Tagline:</strong> 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.</p>
-                                        </div>
-                                        """, unsafe_allow_html=True)
-                                        break
-                    else:
-                        st.warning("⚠️ No video data received. The Gemini API may not support video generation in your region yet.")
-                        st.info("💡 Try using the 'video generation' capability in Google AI Studio instead.")
-                        
-            except Exception as e:
-                st.error(f"❌ Error generating video: {str(e)}")
-                st.info("💡 Make sure your API key is valid and has video generation enabled.")
-                st.info("📌 If video generation isn't available, try using Google AI Studio directly with the same prompt.")
+    # ---------- EMBEDDED VIDEO FROM GITHUB ----------
+    video_url = "https://github.com/Deslandes1/nanobanana-mcp/raw/refs/heads/main/Generate_it_now_because_I_don_.mp4"
+    
+    st.markdown(f"""
+    <div class="video-container">
+        <video controls autoplay>
+            <source src="{video_url}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ---------- CLOSING CARDS ----------
+    st.markdown("""
+    <div class="closing-cards">
+        <h4>📋 Closing Cards Information</h4>
+        <p><strong>CEO:</strong> Jean Charles RJ</p>
+        <p><strong>WhatsApp:</strong> +18094177808</p>
+        <p><strong>Social Media:</strong> @HCC</p>
+        <p><strong>Tagline:</strong> 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ---------- DOWNLOAD BUTTON ----------
+    st.markdown("### ⬇️ Download Video")
+    st.markdown("Click the button below to download the video to your device.")
+    
+    # Create a download link using the raw GitHub URL
+    video_data = requests.get(video_url).content
+    st.download_button(
+        label="⬇️ Download Video (MP4)",
+        data=video_data,
+        file_name="HCC_CEO_Jean_Charles_RJ.mp4",
+        mime="video/mp4",
+        use_container_width=True
+    )
 
 with col2:
     st.markdown("""
     <div class="info-box">
-        <h3>📌 Instructions</h3>
-        <ol>
-            <li>Enter your Gemini API key in the sidebar</li>
-            <li>Click "Generate Video"</li>
-            <li>Wait 1-3 minutes for generation</li>
-            <li>Preview and download your video</li>
-        </ol>
-        <br>
-        <h4>🔑 Getting an API Key</h4>
-        <p>1. Go to <a href="https://ai.google.dev/" target="_blank">Google AI Studio</a></p>
-        <p>2. Create an account or sign in</p>
-        <p>3. Generate an API key with video generation enabled</p>
-        <br>
-        <h4>💡 Alternative</h4>
-        <p>If video generation isn't available via API yet, use <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a> directly with the same prompt.</p>
+        <h3>📌 About This Video</h3>
+        <p>This video was generated using the following prompt:</p>
+        <hr>
+        <p style="font-size:0.85rem; color:#1a2b4c;">
+        <strong>Visual Style:</strong> Jean Charles RJ wearing regular eyeglasses and a sleek black suit, sitting confidently at a desk in a modern, elegant office environment. In the background, the polished "Haiti Culture Connection" logo and subtle visual elements of Haitian historical monuments (like the Citadelle) are integrated.
+        </p>
+        <hr>
+        <p style="font-size:0.85rem; color:#1a2b4c;">
+        <strong>Audio:</strong> Jean Charles speaks fluently in French with an engaging and inspiring tone, delivering the full HCC presentation script.
+        </p>
+        <hr>
+        <p style="font-size:0.85rem; color:#1a2b4c;">
+        <strong>Closing Cards:</strong> CEO: Jean Charles RJ | WhatsApp: +18094177808 | Social Media: @HCC | Tagline: 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.
+        </p>
     </div>
     """, unsafe_allow_html=True)
 

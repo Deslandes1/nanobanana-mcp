@@ -106,6 +106,17 @@ st.markdown("""
     .closing-cards p {
         margin: 6px 0;
     }
+    .prompt-box {
+        background: #f8f9fa;
+        border: 1px solid #dde1e6;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: monospace;
+        font-size: 0.85rem;
+        white-space: pre-wrap;
+        max-height: 300px;
+        overflow-y: auto;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -113,7 +124,7 @@ st.markdown("""
 st.markdown('<div class="main-title">🎬 HCC – CEO Introduction Video</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">Generate a professional video with Jean Charles RJ</div>', unsafe_allow_html=True)
 
-# ---------- SCRIPT (Jean Charles RJ as CEO) ----------
+# ---------- SCRIPT ----------
 SCRIPT = """HCC : Haiti Culture Connection. Le premier label de l'histoire du HMI. Une initiative novatrice pour la jeunesse productive d'Haïti. Désormais, les jeunes talents haïtiens ont un recours lorsqu'il s'agit de financer leurs projets artistiques @HCC. Avec une équipe engagée dédiée au mentorat des œuvres, à la promotion de notre patrimoine historique et culturel, et au marketing de la culture haïtienne. HCC vise à établir une connexion directe entre tous les artistes haïtiens, en reliant leurs entreprises et entreprises évoluant dans le secteur des arts afin qu'ils grandissent ensemble. Cette connexion directe facilitera les échanges commerciaux au sein du HMI et rapprochera également les artistes et le public - une connexion qui guidera tous les jeunes talents vers leurs objectifs. HCC est le nouveau patrimoine structurel de la culture haïtienne. La culture est la preuve la plus tangible de l'existence de toutes les civilisations."""
 
 PROMPT = f"""Generate a high-end, professional cinematic video featuring Jean Charles RJ as the CEO of Haiti Culture Connection.
@@ -141,7 +152,7 @@ PROMPT = f"""Generate a high-end, professional cinematic video featuring Jean Ch
 - High-resolution (1080p or higher)
 - Professional, corporate, inspirational tone
 - Subtle background music (elegant, inspiring)
-- The video should look like a professional corporate announcement from a major organization.
+- The video should look like a professional corporate announcement.
 - Duration: approximately 60-90 seconds.
 """
 
@@ -161,7 +172,7 @@ with st.sidebar:
     st.markdown("**Tagline:** 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.")
     st.markdown("---")
     st.markdown("### 🎬 Generation Info")
-    st.markdown("**Model:** Gemini 2.0 Flash (video generation)")
+    st.markdown("**Model:** Gemini 2.0 Flash (text-to-video)")
     st.markdown("**Resolution:** 1080p")
     st.markdown("**Duration:** ~60-90 seconds")
 
@@ -187,30 +198,27 @@ with col1:
             st.error("❌ Please enter your Gemini API key in the sidebar.")
         else:
             try:
-                # Configure Gemini
                 genai.configure(api_key=api_key)
+                model = genai.GenerativeModel('gemini-2.0-flash-exp')
                 
                 with st.spinner("🎬 Generating your video... This may take 2-4 minutes."):
-                    # Use the Gemini model for video generation
-                    model = genai.GenerativeModel('gemini-2.0-flash-exp')
-                    
-                    # Generate video content
+                    # Remove unsupported 'response_modalities' argument
                     response = model.generate_content(
                         PROMPT,
                         generation_config=genai.types.GenerationConfig(
-                            response_modalities=["VIDEO"],
                             temperature=0.7,
                             max_output_tokens=2048,
                         )
                     )
                     
-                    # Process the response
+                    # Check if video data is present
                     video_data = None
                     if hasattr(response, 'candidates') and response.candidates:
                         for candidate in response.candidates:
                             if hasattr(candidate, 'content') and candidate.content:
                                 for part in candidate.content.parts:
                                     if hasattr(part, 'inline_data') and part.inline_data:
+                                        # This might be video data
                                         video_data = part.inline_data.data
                                         break
                     
@@ -218,7 +226,6 @@ with col1:
                         st.success("✅ Video generated successfully!")
                         st.markdown("---")
                         
-                        # Display video
                         video_base64 = base64.b64encode(video_data).decode()
                         st.markdown(f"""
                         <div class="video-container">
@@ -229,7 +236,6 @@ with col1:
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Download button
                         st.download_button(
                             label="⬇️ Download Video (MP4)",
                             data=video_data,
@@ -238,7 +244,6 @@ with col1:
                             use_container_width=True
                         )
                         
-                        # Display closing cards
                         st.markdown("""
                         <div class="closing-cards">
                             <h4>📋 Closing Cards Information</h4>
@@ -249,11 +254,22 @@ with col1:
                         </div>
                         """, unsafe_allow_html=True)
                     else:
-                        st.warning("⚠️ No video data received. The Gemini API may not support video generation in your region yet.")
-                        st.info("💡 Try using the same prompt in Google AI Studio directly.")
+                        # Fallback: provide the prompt for AI Studio
+                        st.warning("⚠️ Video generation via API may not be fully supported yet. However, you can use the same prompt in Google AI Studio to generate the video for free.")
+                        st.markdown("---")
+                        st.markdown("### 📋 Copy this prompt to AI Studio")
+                        st.markdown(f'<div class="prompt-box">{PROMPT}</div>', unsafe_allow_html=True)
+                        st.markdown("""
+                        <br>
+                        <a href="https://aistudio.google.com/" target="_blank">
+                            <button style="background: #0066cc; color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: 600; cursor: pointer;">
+                                🔗 Open Google AI Studio
+                            </button>
+                        </a>
+                        """, unsafe_allow_html=True)
             except Exception as e:
                 st.error(f"❌ Error generating video: {str(e)}")
-                st.info("💡 Make sure your API key is valid and has video generation enabled.")
+                st.info("💡 Make sure your API key is valid. If video generation via API is not available, use the prompt above in Google AI Studio.")
 
 with col2:
     st.markdown("""

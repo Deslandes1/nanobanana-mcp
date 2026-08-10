@@ -1,15 +1,13 @@
 import streamlit as st
 import google.generativeai as genai
-from PIL import Image
 import base64
-import os
 import time
-from io import BytesIO
-import requests  # <-- ADDED to fix NameError
+import requests
+import json
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(
-    page_title="HCC Video Generator – Gemini AI",
+    page_title="HCC Video Generator",
     page_icon="🎬",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -69,9 +67,10 @@ st.markdown("""
         font-weight: 600 !important;
         font-size: 1.1rem !important;
         transition: all 0.3s !important;
+        width: 100%;
     }
     .stButton button:hover {
-        transform: scale(1.05) !important;
+        transform: scale(1.02) !important;
         box-shadow: 0 5px 30px rgba(0,68,170,0.3) !important;
     }
     .footer {
@@ -87,6 +86,7 @@ st.markdown("""
         border-radius: 16px;
         overflow: hidden;
         box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+        margin-top: 15px;
     }
     .video-container video {
         width: 100%;
@@ -111,13 +111,45 @@ st.markdown("""
 
 # ---------- TITLE ----------
 st.markdown('<div class="main-title">🎬 HCC – CEO Introduction Video</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Jean Charles RJ presents Haiti Culture Connection</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Generate a professional video with Jean Charles RJ</div>', unsafe_allow_html=True)
 
 # ---------- SCRIPT (Jean Charles RJ as CEO) ----------
 SCRIPT = """HCC : Haiti Culture Connection. Le premier label de l'histoire du HMI. Une initiative novatrice pour la jeunesse productive d'Haïti. Désormais, les jeunes talents haïtiens ont un recours lorsqu'il s'agit de financer leurs projets artistiques @HCC. Avec une équipe engagée dédiée au mentorat des œuvres, à la promotion de notre patrimoine historique et culturel, et au marketing de la culture haïtienne. HCC vise à établir une connexion directe entre tous les artistes haïtiens, en reliant leurs entreprises et entreprises évoluant dans le secteur des arts afin qu'ils grandissent ensemble. Cette connexion directe facilitera les échanges commerciaux au sein du HMI et rapprochera également les artistes et le public - une connexion qui guidera tous les jeunes talents vers leurs objectifs. HCC est le nouveau patrimoine structurel de la culture haïtienne. La culture est la preuve la plus tangible de l'existence de toutes les civilisations."""
 
+PROMPT = f"""Generate a high-end, professional cinematic video featuring Jean Charles RJ as the CEO of Haiti Culture Connection.
+
+**Visual Style:**
+- Jean Charles RJ wearing regular eyeglasses and a sleek black suit
+- Sitting confidently at a desk in a modern, elegant office environment
+- In the background, the polished "Haiti Culture Connection" logo and subtle visual elements of Haitian historical monuments (like the Citadelle) are integrated
+- Professional lighting, cinematic quality, 16:9 aspect ratio
+- Smooth transitions, inspiring atmosphere
+
+**Audio/Speech:**
+- Jean Charles speaks fluently in French with an engaging and inspiring tone
+- He delivers the following script naturally:
+
+"{SCRIPT}"
+
+**Closing Cards (on-screen text at the end):**
+- CEO: Jean Charles RJ
+- WhatsApp: +18094177808
+- Social Media: @HCC
+- Tagline: 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.
+
+**Requirements:**
+- High-resolution (1080p or higher)
+- Professional, corporate, inspirational tone
+- Subtle background music (elegant, inspiring)
+- The video should look like a professional corporate announcement from a major organization.
+- Duration: approximately 60-90 seconds.
+"""
+
 # ---------- SIDEBAR ----------
 with st.sidebar:
+    st.markdown("## 🔑 Gemini API Key")
+    api_key = st.text_input("Enter your API key", type="password")
+    st.markdown("---")
     st.markdown("## 📋 Script Preview")
     with st.expander("Click to view the full script"):
         st.markdown(f'<div class="script-box">{SCRIPT}</div>', unsafe_allow_html=True)
@@ -128,10 +160,10 @@ with st.sidebar:
     st.markdown("**Social Media:** @HCC")
     st.markdown("**Tagline:** 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.")
     st.markdown("---")
-    st.markdown("### 🎬 Video Info")
-    st.markdown("**Source:** GitHub Repository")
-    st.markdown("**Format:** MP4")
-    st.markdown("**Size:** 2.62 MB")
+    st.markdown("### 🎬 Generation Info")
+    st.markdown("**Model:** Gemini 2.0 Flash (video generation)")
+    st.markdown("**Resolution:** 1080p")
+    st.markdown("**Duration:** ~60-90 seconds")
 
 # ---------- MAIN CONTENT ----------
 col1, col2 = st.columns([2, 1])
@@ -139,76 +171,111 @@ col1, col2 = st.columns([2, 1])
 with col1:
     st.markdown("""
     <div class="info-box">
-        <h3>🎥 CEO Introduction Video</h3>
-        <p>Watch Jean Charles RJ, CEO of Haiti Culture Connection, deliver a powerful presentation about the organization's mission and vision.</p>
-        <p><strong>Video features:</strong></p>
+        <h3>🎥 Generate Your Video</h3>
+        <p>Use the power of Gemini AI to create a professional introduction video of Jean Charles RJ, CEO of Haiti Culture Connection.</p>
         <ul>
-            <li>Jean Charles RJ in a professional office setting</li>
+            <li>Jean Charles RJ in a modern office with HCC branding</li>
             <li>Full script delivered in French</li>
-            <li>HCC logo and Haitian monuments in the background</li>
-            <li>Closing cards with CEO info, WhatsApp, social media, and tagline</li>
+            <li>Professional closing cards with CEO info and contacts</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
 
-    # ---------- EMBEDDED VIDEO FROM GITHUB (correct raw URL) ----------
-    video_url = "https://raw.githubusercontent.com/Deslandes1/nanobanana-mcp/refs/heads/main/Generate_it_now_because_I_don_.mp4"
-    
-    st.markdown(f"""
-    <div class="video-container">
-        <video controls autoplay>
-            <source src="{video_url}" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ---------- CLOSING CARDS ----------
-    st.markdown("""
-    <div class="closing-cards">
-        <h4>📋 Closing Cards Information</h4>
-        <p><strong>CEO:</strong> Jean Charles RJ</p>
-        <p><strong>WhatsApp:</strong> +18094177808</p>
-        <p><strong>Social Media:</strong> @HCC</p>
-        <p><strong>Tagline:</strong> 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ---------- DOWNLOAD BUTTON ----------
-    st.markdown("### ⬇️ Download Video")
-    st.markdown("Click the button below to download the video to your device.")
-    
-    # Fetch video data using requests (now imported)
-    try:
-        video_data = requests.get(video_url).content
-        st.download_button(
-            label="⬇️ Download Video (MP4)",
-            data=video_data,
-            file_name="HCC_CEO_Jean_Charles_RJ.mp4",
-            mime="video/mp4",
-            use_container_width=True
-        )
-    except Exception as e:
-        st.warning("Could not fetch video for download. Please try again later.")
-        st.error(f"Error: {e}")
+    # ---------- GENERATION BUTTON ----------
+    if st.button("🚀 Generate Video", use_container_width=True):
+        if not api_key:
+            st.error("❌ Please enter your Gemini API key in the sidebar.")
+        else:
+            try:
+                # Configure Gemini
+                genai.configure(api_key=api_key)
+                
+                with st.spinner("🎬 Generating your video... This may take 2-4 minutes."):
+                    # Use the Gemini model for video generation
+                    model = genai.GenerativeModel('gemini-2.0-flash-exp')
+                    
+                    # Generate video content
+                    response = model.generate_content(
+                        PROMPT,
+                        generation_config=genai.types.GenerationConfig(
+                            response_modalities=["VIDEO"],
+                            temperature=0.7,
+                            max_output_tokens=2048,
+                        )
+                    )
+                    
+                    # Process the response
+                    video_data = None
+                    if hasattr(response, 'candidates') and response.candidates:
+                        for candidate in response.candidates:
+                            if hasattr(candidate, 'content') and candidate.content:
+                                for part in candidate.content.parts:
+                                    if hasattr(part, 'inline_data') and part.inline_data:
+                                        video_data = part.inline_data.data
+                                        break
+                    
+                    if video_data:
+                        st.success("✅ Video generated successfully!")
+                        st.markdown("---")
+                        
+                        # Display video
+                        video_base64 = base64.b64encode(video_data).decode()
+                        st.markdown(f"""
+                        <div class="video-container">
+                            <video controls autoplay>
+                                <source src="data:video/mp4;base64,{video_base64}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Download button
+                        st.download_button(
+                            label="⬇️ Download Video (MP4)",
+                            data=video_data,
+                            file_name="HCC_CEO_Jean_Charles_RJ.mp4",
+                            mime="video/mp4",
+                            use_container_width=True
+                        )
+                        
+                        # Display closing cards
+                        st.markdown("""
+                        <div class="closing-cards">
+                            <h4>📋 Closing Cards Information</h4>
+                            <p><strong>CEO:</strong> Jean Charles RJ</p>
+                            <p><strong>WhatsApp:</strong> +18094177808</p>
+                            <p><strong>Social Media:</strong> @HCC</p>
+                            <p><strong>Tagline:</strong> 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.warning("⚠️ No video data received. The Gemini API may not support video generation in your region yet.")
+                        st.info("💡 Try using the same prompt in Google AI Studio directly.")
+            except Exception as e:
+                st.error(f"❌ Error generating video: {str(e)}")
+                st.info("💡 Make sure your API key is valid and has video generation enabled.")
 
 with col2:
     st.markdown("""
     <div class="info-box">
-        <h3>📌 About This Video</h3>
-        <p>This video was generated using the following prompt:</p>
+        <h3>📌 Prompt Details</h3>
+        <p><strong>Visual Style:</strong></p>
+        <ul>
+            <li>Jean Charles RJ wearing eyeglasses and black suit</li>
+            <li>Modern office setting with laptop</li>
+            <li>HCC logo and Citadelle in background</li>
+        </ul>
+        <p><strong>Audio:</strong></p>
+        <ul>
+            <li>Full script in French</li>
+            <li>Engaging, inspiring tone</li>
+        </ul>
+        <p><strong>Closing Cards:</strong></p>
+        <ul>
+            <li>CEO, WhatsApp, Social Media, Tagline</li>
+        </ul>
         <hr>
-        <p style="font-size:0.85rem; color:#1a2b4c;">
-        <strong>Visual Style:</strong> Jean Charles RJ wearing regular eyeglasses and a sleek black suit, sitting confidently at a desk in a modern, elegant office environment. In the background, the polished "Haiti Culture Connection" logo and subtle visual elements of Haitian historical monuments (like the Citadelle) are integrated.
-        </p>
-        <hr>
-        <p style="font-size:0.85rem; color:#1a2b4c;">
-        <strong>Audio:</strong> Jean Charles speaks fluently in French with an engaging and inspiring tone, delivering the full HCC presentation script.
-        </p>
-        <hr>
-        <p style="font-size:0.85rem; color:#1a2b4c;">
-        <strong>Closing Cards:</strong> CEO: Jean Charles RJ | WhatsApp: +18094177808 | Social Media: @HCC | Tagline: 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.
-        </p>
+        <p style="font-size:0.8rem; color:#555;">This prompt was crafted to match your exact specifications.</p>
     </div>
     """, unsafe_allow_html=True)
 

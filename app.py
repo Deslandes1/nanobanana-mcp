@@ -3,7 +3,6 @@ import google.generativeai as genai
 import base64
 import time
 import requests
-import json
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(
@@ -114,7 +113,7 @@ st.markdown("""
         font-family: monospace;
         font-size: 0.85rem;
         white-space: pre-wrap;
-        max-height: 300px;
+        max-height: 400px;
         overflow-y: auto;
     }
     </style>
@@ -172,7 +171,7 @@ with st.sidebar:
     st.markdown("**Tagline:** 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.")
     st.markdown("---")
     st.markdown("### 🎬 Generation Info")
-    st.markdown("**Model:** Gemini 2.0 Flash (text-to-video)")
+    st.markdown("**Model:** Gemini 1.5 Pro (text only – video generation requires AI Studio)")
     st.markdown("**Resolution:** 1080p")
     st.markdown("**Duration:** ~60-90 seconds")
 
@@ -192,17 +191,17 @@ with col1:
     </div>
     """, unsafe_allow_html=True)
 
-    # ---------- GENERATION BUTTON ----------
     if st.button("🚀 Generate Video", use_container_width=True):
         if not api_key:
             st.error("❌ Please enter your Gemini API key in the sidebar.")
         else:
             try:
                 genai.configure(api_key=api_key)
-                model = genai.GenerativeModel('gemini-2.0-flash-exp')
+                # Use a valid model for text generation (video generation is not supported via Python API)
+                model = genai.GenerativeModel('gemini-1.5-pro')
                 
-                with st.spinner("🎬 Generating your video... This may take 2-4 minutes."):
-                    # Remove unsupported 'response_modalities' argument
+                with st.spinner("🎬 Attempting to generate video (this may fail, but we'll give you the prompt)..."):
+                    # Try to generate content; we expect no video, but we'll handle gracefully
                     response = model.generate_content(
                         PROMPT,
                         generation_config=genai.types.GenerationConfig(
@@ -210,22 +209,18 @@ with col1:
                             max_output_tokens=2048,
                         )
                     )
-                    
-                    # Check if video data is present
+                    # Check if there's any inline data (unlikely)
                     video_data = None
                     if hasattr(response, 'candidates') and response.candidates:
                         for candidate in response.candidates:
                             if hasattr(candidate, 'content') and candidate.content:
                                 for part in candidate.content.parts:
                                     if hasattr(part, 'inline_data') and part.inline_data:
-                                        # This might be video data
                                         video_data = part.inline_data.data
                                         break
-                    
                     if video_data:
                         st.success("✅ Video generated successfully!")
                         st.markdown("---")
-                        
                         video_base64 = base64.b64encode(video_data).decode()
                         st.markdown(f"""
                         <div class="video-container">
@@ -235,7 +230,6 @@ with col1:
                             </video>
                         </div>
                         """, unsafe_allow_html=True)
-                        
                         st.download_button(
                             label="⬇️ Download Video (MP4)",
                             data=video_data,
@@ -243,7 +237,6 @@ with col1:
                             mime="video/mp4",
                             use_container_width=True
                         )
-                        
                         st.markdown("""
                         <div class="closing-cards">
                             <h4>📋 Closing Cards Information</h4>
@@ -254,22 +247,43 @@ with col1:
                         </div>
                         """, unsafe_allow_html=True)
                     else:
-                        # Fallback: provide the prompt for AI Studio
-                        st.warning("⚠️ Video generation via API may not be fully supported yet. However, you can use the same prompt in Google AI Studio to generate the video for free.")
+                        # No video data -> provide prompt for AI Studio
+                        st.warning("⚠️ Video generation via the Python API is not yet supported by Gemini. However, you can generate the video for free using Google AI Studio.")
                         st.markdown("---")
-                        st.markdown("### 📋 Copy this prompt to AI Studio")
+                        st.markdown("### 📋 Copy this prompt and paste it into Google AI Studio")
                         st.markdown(f'<div class="prompt-box">{PROMPT}</div>', unsafe_allow_html=True)
                         st.markdown("""
                         <br>
-                        <a href="https://aistudio.google.com/" target="_blank">
-                            <button style="background: #0066cc; color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: 600; cursor: pointer;">
+                        <a href="https://aistudio.google.com/" target="_blank" style="text-decoration: none;">
+                            <button style="background: #0066cc; color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: 600; cursor: pointer; width: 100%;">
                                 🔗 Open Google AI Studio
                             </button>
                         </a>
                         """, unsafe_allow_html=True)
+                        st.markdown("""
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: #555;">
+                            <p><strong>Steps:</strong></p>
+                            <ol>
+                                <li>Open AI Studio</li>
+                                <li>Select the video generation model (Gemini 2.0 Flash or Veo)</li>
+                                <li>Paste the prompt above</li>
+                                <li>Generate and download your video</li>
+                            </ol>
+                        </div>
+                        """, unsafe_allow_html=True)
             except Exception as e:
-                st.error(f"❌ Error generating video: {str(e)}")
-                st.info("💡 Make sure your API key is valid. If video generation via API is not available, use the prompt above in Google AI Studio.")
+                st.error(f"❌ Error: {str(e)}")
+                st.info("💡 Since video generation via API is not yet available, please use the prompt above in Google AI Studio.")
+                st.markdown("### 📋 Your Prompt")
+                st.markdown(f'<div class="prompt-box">{PROMPT}</div>', unsafe_allow_html=True)
+                st.markdown("""
+                <br>
+                <a href="https://aistudio.google.com/" target="_blank" style="text-decoration: none;">
+                    <button style="background: #0066cc; color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: 600; cursor: pointer; width: 100%;">
+                        🔗 Open Google AI Studio
+                    </button>
+                </a>
+                """, unsafe_allow_html=True)
 
 with col2:
     st.markdown("""
@@ -292,6 +306,7 @@ with col2:
         </ul>
         <hr>
         <p style="font-size:0.8rem; color:#555;">This prompt was crafted to match your exact specifications.</p>
+        <p style="font-size:0.8rem; color:#555;"><strong>Note:</strong> Gemini video generation is only available in AI Studio, not via the API.</p>
     </div>
     """, unsafe_allow_html=True)
 

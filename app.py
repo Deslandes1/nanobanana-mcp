@@ -5,6 +5,7 @@ import base64
 import os
 import time
 from io import BytesIO
+import requests  # <-- ADDED to fix NameError
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(
@@ -112,7 +113,7 @@ st.markdown("""
 st.markdown('<div class="main-title">🎬 HCC – CEO Introduction Video</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">Jean Charles RJ presents Haiti Culture Connection</div>', unsafe_allow_html=True)
 
-# ---------- SCRIPT ----------
+# ---------- SCRIPT (Jean Charles RJ as CEO) ----------
 SCRIPT = """HCC : Haiti Culture Connection. Le premier label de l'histoire du HMI. Une initiative novatrice pour la jeunesse productive d'Haïti. Désormais, les jeunes talents haïtiens ont un recours lorsqu'il s'agit de financer leurs projets artistiques @HCC. Avec une équipe engagée dédiée au mentorat des œuvres, à la promotion de notre patrimoine historique et culturel, et au marketing de la culture haïtienne. HCC vise à établir une connexion directe entre tous les artistes haïtiens, en reliant leurs entreprises et entreprises évoluant dans le secteur des arts afin qu'ils grandissent ensemble. Cette connexion directe facilitera les échanges commerciaux au sein du HMI et rapprochera également les artistes et le public - une connexion qui guidera tous les jeunes talents vers leurs objectifs. HCC est le nouveau patrimoine structurel de la culture haïtienne. La culture est la preuve la plus tangible de l'existence de toutes les civilisations."""
 
 # ---------- SIDEBAR ----------
@@ -150,8 +151,8 @@ with col1:
     </div>
     """, unsafe_allow_html=True)
 
-    # ---------- EMBEDDED VIDEO FROM GITHUB ----------
-    video_url = "https://github.com/Deslandes1/nanobanana-mcp/raw/refs/heads/main/Generate_it_now_because_I_don_.mp4"
+    # ---------- EMBEDDED VIDEO FROM GITHUB (correct raw URL) ----------
+    video_url = "https://raw.githubusercontent.com/Deslandes1/nanobanana-mcp/refs/heads/main/Generate_it_now_because_I_don_.mp4"
     
     st.markdown(f"""
     <div class="video-container">
@@ -177,15 +178,19 @@ with col1:
     st.markdown("### ⬇️ Download Video")
     st.markdown("Click the button below to download the video to your device.")
     
-    # Create a download link using the raw GitHub URL
-    video_data = requests.get(video_url).content
-    st.download_button(
-        label="⬇️ Download Video (MP4)",
-        data=video_data,
-        file_name="HCC_CEO_Jean_Charles_RJ.mp4",
-        mime="video/mp4",
-        use_container_width=True
-    )
+    # Fetch video data using requests (now imported)
+    try:
+        video_data = requests.get(video_url).content
+        st.download_button(
+            label="⬇️ Download Video (MP4)",
+            data=video_data,
+            file_name="HCC_CEO_Jean_Charles_RJ.mp4",
+            mime="video/mp4",
+            use_container_width=True
+        )
+    except Exception as e:
+        st.warning("Could not fetch video for download. Please try again later.")
+        st.error(f"Error: {e}")
 
 with col2:
     st.markdown("""

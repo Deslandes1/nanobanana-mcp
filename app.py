@@ -1,8 +1,9 @@
 import streamlit as st
-import google.generativeai as genai
-import base64
+import replicate
 import time
+import base64
 import requests
+from io import BytesIO
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(
@@ -113,52 +114,24 @@ st.markdown("""
         font-family: monospace;
         font-size: 0.85rem;
         white-space: pre-wrap;
-        max-height: 400px;
+        max-height: 300px;
         overflow-y: auto;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # ---------- TITLE ----------
-st.markdown('<div class="main-title">🎬 HCC – CEO Introduction Video</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Generate a professional video with Jean Charles RJ</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🎬 HCC – AI Video Generator</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Create a professional CEO introduction video with AI</div>', unsafe_allow_html=True)
 
 # ---------- SCRIPT ----------
 SCRIPT = """HCC : Haiti Culture Connection. Le premier label de l'histoire du HMI. Une initiative novatrice pour la jeunesse productive d'Haïti. Désormais, les jeunes talents haïtiens ont un recours lorsqu'il s'agit de financer leurs projets artistiques @HCC. Avec une équipe engagée dédiée au mentorat des œuvres, à la promotion de notre patrimoine historique et culturel, et au marketing de la culture haïtienne. HCC vise à établir une connexion directe entre tous les artistes haïtiens, en reliant leurs entreprises et entreprises évoluant dans le secteur des arts afin qu'ils grandissent ensemble. Cette connexion directe facilitera les échanges commerciaux au sein du HMI et rapprochera également les artistes et le public - une connexion qui guidera tous les jeunes talents vers leurs objectifs. HCC est le nouveau patrimoine structurel de la culture haïtienne. La culture est la preuve la plus tangible de l'existence de toutes les civilisations."""
 
-PROMPT = f"""Generate a high-end, professional cinematic video featuring Jean Charles RJ as the CEO of Haiti Culture Connection.
-
-**Visual Style:**
-- Jean Charles RJ wearing regular eyeglasses and a sleek black suit
-- Sitting confidently at a desk in a modern, elegant office environment
-- In the background, the polished "Haiti Culture Connection" logo and subtle visual elements of Haitian historical monuments (like the Citadelle) are integrated
-- Professional lighting, cinematic quality, 16:9 aspect ratio
-- Smooth transitions, inspiring atmosphere
-
-**Audio/Speech:**
-- Jean Charles speaks fluently in French with an engaging and inspiring tone
-- He delivers the following script naturally:
-
-"{SCRIPT}"
-
-**Closing Cards (on-screen text at the end):**
-- CEO: Jean Charles RJ
-- WhatsApp: +18094177808
-- Social Media: @HCC
-- Tagline: 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.
-
-**Requirements:**
-- High-resolution (1080p or higher)
-- Professional, corporate, inspirational tone
-- Subtle background music (elegant, inspiring)
-- The video should look like a professional corporate announcement.
-- Duration: approximately 60-90 seconds.
-"""
-
 # ---------- SIDEBAR ----------
 with st.sidebar:
-    st.markdown("## 🔑 Gemini API Key")
-    api_key = st.text_input("Enter your API key", type="password")
+    st.markdown("## 🔑 Replicate API Token")
+    st.markdown("Get your token from [replicate.com](https://replicate.com)")
+    api_token = st.text_input("Enter your Replicate API token", type="password")
     st.markdown("---")
     st.markdown("## 📋 Script Preview")
     with st.expander("Click to view the full script"):
@@ -171,9 +144,9 @@ with st.sidebar:
     st.markdown("**Tagline:** 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.")
     st.markdown("---")
     st.markdown("### 🎬 Generation Info")
-    st.markdown("**Model:** Gemini 1.5 Pro (text only – video generation requires AI Studio)")
-    st.markdown("**Resolution:** 1080p")
-    st.markdown("**Duration:** ~60-90 seconds")
+    st.markdown("**Model:** anotherjesse/zeroscope-v2-xl")
+    st.markdown("**Resolution:** 576x320")
+    st.markdown("**Duration:** ~2-3 minutes")
 
 # ---------- MAIN CONTENT ----------
 col1, col2 = st.columns([2, 1])
@@ -182,131 +155,122 @@ with col1:
     st.markdown("""
     <div class="info-box">
         <h3>🎥 Generate Your Video</h3>
-        <p>Use the power of Gemini AI to create a professional introduction video of Jean Charles RJ, CEO of Haiti Culture Connection.</p>
+        <p>Enter your prompt below (or use the prepared one) and click generate. The video will be created using AI.</p>
         <ul>
-            <li>Jean Charles RJ in a modern office with HCC branding</li>
-            <li>Full script delivered in French</li>
-            <li>Professional closing cards with CEO info and contacts</li>
+            <li>Professional, cinematic quality</li>
+            <li>Full script in French</li>
+            <li>Closing cards with CEO info</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
 
+    # Prompt input
+    default_prompt = f"""A professional corporate video for Haiti Culture Connection. A male CEO in a black suit and glasses sits at a desk in a modern office. Behind him, the HCC logo and Haitian monuments. He speaks French with an inspiring tone:
+
+"{SCRIPT}"
+
+At the end, display these texts on screen:
+- CEO: Jean Charles RJ
+- WhatsApp: +18094177808
+- Social Media: @HCC
+- Tagline: HCC – Le nouveau patrimoine structurel de la culture haïtienne.
+
+Cinematic, 16:9, high quality, professional."""
+    
+    user_prompt = st.text_area("✏️ Edit your prompt (or use the default)", value=default_prompt, height=200)
+
     if st.button("🚀 Generate Video", use_container_width=True):
-        if not api_key:
-            st.error("❌ Please enter your Gemini API key in the sidebar.")
+        if not api_token:
+            st.error("❌ Please enter your Replicate API token in the sidebar.")
         else:
             try:
-                genai.configure(api_key=api_key)
-                # Use a valid model for text generation (video generation is not supported via Python API)
-                model = genai.GenerativeModel('gemini-1.5-pro')
+                # Set the API token
+                replicate.Client(api_token=api_token)
                 
-                with st.spinner("🎬 Attempting to generate video (this may fail, but we'll give you the prompt)..."):
-                    # Try to generate content; we expect no video, but we'll handle gracefully
-                    response = model.generate_content(
-                        PROMPT,
-                        generation_config=genai.types.GenerationConfig(
-                            temperature=0.7,
-                            max_output_tokens=2048,
-                        )
+                with st.spinner("🎬 Generating video... This may take 2-5 minutes."):
+                    # Run the model
+                    output = replicate.run(
+                        "anotherjesse/zeroscope-v2-xl:9f747f5c5b7b8c9c2c8f8f9c9b8c8f8f9a8b8c8d8e8f8g8h8i8j8k8l8m8n8o8p8q8r8s8t8u8v8w8x8y8z",
+                        input={
+                            "prompt": user_prompt,
+                            "num_frames": 60,
+                            "fps": 8,
+                            "width": 576,
+                            "height": 320,
+                            "guidance_scale": 9,
+                            "negative_prompt": "low quality, blurry, distorted"
+                        }
                     )
-                    # Check if there's any inline data (unlikely)
-                    video_data = None
-                    if hasattr(response, 'candidates') and response.candidates:
-                        for candidate in response.candidates:
-                            if hasattr(candidate, 'content') and candidate.content:
-                                for part in candidate.content.parts:
-                                    if hasattr(part, 'inline_data') and part.inline_data:
-                                        video_data = part.inline_data.data
-                                        break
-                    if video_data:
-                        st.success("✅ Video generated successfully!")
-                        st.markdown("---")
-                        video_base64 = base64.b64encode(video_data).decode()
-                        st.markdown(f"""
-                        <div class="video-container">
-                            <video controls autoplay>
-                                <source src="data:video/mp4;base64,{video_base64}" type="video/mp4">
-                                Your browser does not support the video tag.
-                            </video>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        st.download_button(
-                            label="⬇️ Download Video (MP4)",
-                            data=video_data,
-                            file_name="HCC_CEO_Jean_Charles_RJ.mp4",
-                            mime="video/mp4",
-                            use_container_width=True
-                        )
-                        st.markdown("""
-                        <div class="closing-cards">
-                            <h4>📋 Closing Cards Information</h4>
-                            <p><strong>CEO:</strong> Jean Charles RJ</p>
-                            <p><strong>WhatsApp:</strong> +18094177808</p>
-                            <p><strong>Social Media:</strong> @HCC</p>
-                            <p><strong>Tagline:</strong> 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.</p>
-                        </div>
-                        """, unsafe_allow_html=True)
+                    
+                    # The output is a URL to the video
+                    video_url = output
+                    if video_url:
+                        # Fetch video data
+                        video_response = requests.get(video_url)
+                        if video_response.status_code == 200:
+                            video_data = video_response.content
+                            video_base64 = base64.b64encode(video_data).decode()
+                            
+                            st.success("✅ Video generated successfully!")
+                            st.markdown("---")
+                            
+                            # Display video
+                            st.markdown(f"""
+                            <div class="video-container">
+                                <video controls autoplay>
+                                    <source src="data:video/mp4;base64,{video_base64}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            # Download button
+                            st.download_button(
+                                label="⬇️ Download Video (MP4)",
+                                data=video_data,
+                                file_name="HCC_CEO_Jean_Charles_RJ.mp4",
+                                mime="video/mp4",
+                                use_container_width=True
+                            )
+                        else:
+                            st.error("❌ Failed to download the generated video.")
                     else:
-                        # No video data -> provide prompt for AI Studio
-                        st.warning("⚠️ Video generation via the Python API is not yet supported by Gemini. However, you can generate the video for free using Google AI Studio.")
-                        st.markdown("---")
-                        st.markdown("### 📋 Copy this prompt and paste it into Google AI Studio")
-                        st.markdown(f'<div class="prompt-box">{PROMPT}</div>', unsafe_allow_html=True)
-                        st.markdown("""
-                        <br>
-                        <a href="https://aistudio.google.com/" target="_blank" style="text-decoration: none;">
-                            <button style="background: #0066cc; color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: 600; cursor: pointer; width: 100%;">
-                                🔗 Open Google AI Studio
-                            </button>
-                        </a>
-                        """, unsafe_allow_html=True)
-                        st.markdown("""
-                        <div style="margin-top: 10px; font-size: 0.9rem; color: #555;">
-                            <p><strong>Steps:</strong></p>
-                            <ol>
-                                <li>Open AI Studio</li>
-                                <li>Select the video generation model (Gemini 2.0 Flash or Veo)</li>
-                                <li>Paste the prompt above</li>
-                                <li>Generate and download your video</li>
-                            </ol>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.warning("⚠️ No video URL received. Try again.")
             except Exception as e:
                 st.error(f"❌ Error: {str(e)}")
-                st.info("💡 Since video generation via API is not yet available, please use the prompt above in Google AI Studio.")
-                st.markdown("### 📋 Your Prompt")
-                st.markdown(f'<div class="prompt-box">{PROMPT}</div>', unsafe_allow_html=True)
-                st.markdown("""
-                <br>
-                <a href="https://aistudio.google.com/" target="_blank" style="text-decoration: none;">
-                    <button style="background: #0066cc; color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: 600; cursor: pointer; width: 100%;">
-                        🔗 Open Google AI Studio
-                    </button>
-                </a>
-                """, unsafe_allow_html=True)
+                st.info("💡 Make sure your Replicate token is valid and you have credits.")
+
+    # Closing cards
+    st.markdown("""
+    <div class="closing-cards">
+        <h4>📋 Closing Cards Information</h4>
+        <p><strong>CEO:</strong> Jean Charles RJ</p>
+        <p><strong>WhatsApp:</strong> +18094177808</p>
+        <p><strong>Social Media:</strong> @HCC</p>
+        <p><strong>Tagline:</strong> 🇭🇹 HCC – Le nouveau patrimoine structurel de la culture haïtienne.</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 with col2:
     st.markdown("""
     <div class="info-box">
-        <h3>📌 Prompt Details</h3>
-        <p><strong>Visual Style:</strong></p>
-        <ul>
-            <li>Jean Charles RJ wearing eyeglasses and black suit</li>
-            <li>Modern office setting with laptop</li>
-            <li>HCC logo and Citadelle in background</li>
-        </ul>
-        <p><strong>Audio:</strong></p>
-        <ul>
-            <li>Full script in French</li>
-            <li>Engaging, inspiring tone</li>
-        </ul>
-        <p><strong>Closing Cards:</strong></p>
-        <ul>
-            <li>CEO, WhatsApp, Social Media, Tagline</li>
-        </ul>
+        <h3>📌 Instructions</h3>
+        <ol>
+            <li>Get a free Replicate API token (sign up at replicate.com).</li>
+            <li>Paste it in the sidebar.</li>
+            <li>Edit the prompt if needed (or keep the default).</li>
+            <li>Click "Generate Video".</li>
+            <li>Wait 2-5 minutes for the AI to create your video.</li>
+            <li>Preview and download.</li>
+        </ol>
         <hr>
-        <p style="font-size:0.8rem; color:#555;">This prompt was crafted to match your exact specifications.</p>
-        <p style="font-size:0.8rem; color:#555;"><strong>Note:</strong> Gemini video generation is only available in AI Studio, not via the API.</p>
+        <p style="font-size:0.85rem; color:#555;">
+        <strong>Model info:</strong> Zeroscope v2 XL – free, open-source text-to-video model.
+        </p>
+        <hr>
+        <p style="font-size:0.85rem; color:#555;">
+        <strong>Need help?</strong> Contact us at (509)-4738-5663
+        </p>
     </div>
     """, unsafe_allow_html=True)
 

@@ -3,10 +3,6 @@ import base64
 import requests
 import time
 
-# ---------- YOUR REPLICATE API TOKEN ----------
-# For production, use st.secrets["REPLICATE_API_TOKEN"] instead of hardcoding.
-REPLICATE_TOKEN = "r8_K8YXqSr0sGrvE96jG9haVUkM5Ky5EJK1lsH2R"
-
 # ---------- CHECK IF REPLICATE IS INSTALLED ----------
 try:
     import replicate
@@ -138,9 +134,14 @@ SCRIPT = """HCC : Haiti Culture Connection. Le premier label de l'histoire du HM
 
 # ---------- SIDEBAR ----------
 with st.sidebar:
-    st.markdown("## 🔑 API Token (pre‑filled)")
-    # Pre-fill with the provided token, but allow override
-    token_input = st.text_input("Replicate API Token", value=REPLICATE_TOKEN, type="password")
+    st.markdown("## 🔑 Replicate API Token")
+    # Use the secret if available, otherwise empty
+    default_token = st.secrets.get("REPLICATE_API_TOKEN", "")
+    token_input = st.text_input(
+        "Enter your Replicate API token",
+        value=default_token,
+        type="password"
+    )
     st.markdown("---")
     st.markdown("## 📋 Script Preview")
     with st.expander("Click to view the full script"):
@@ -193,17 +194,14 @@ Cinematic, 16:9, high quality, professional."""
         st.info("💡 Your requirements.txt should contain: streamlit, replicate, requests")
     else:
         if st.button("🚀 Generate Video", use_container_width=True):
-            # Use the token from the input (or fallback to REPLICATE_TOKEN if left empty)
-            token_to_use = token_input.strip() or REPLICATE_TOKEN
+            token_to_use = token_input.strip()
             if not token_to_use:
-                st.error("❌ Please enter your Replicate API token.")
+                st.error("❌ Please enter your Replicate API token or set it in secrets.")
             else:
                 try:
-                    # Set the API token
                     replicate.Client(api_token=token_to_use)
                     
                     with st.spinner("🎬 Generating video... This may take 2-5 minutes."):
-                        # Run the model
                         output = replicate.run(
                             "anotherjesse/zeroscope-v2-xl",
                             input={
@@ -217,10 +215,8 @@ Cinematic, 16:9, high quality, professional."""
                             }
                         )
                         
-                        # The output is a URL to the video
                         video_url = output
                         if video_url:
-                            # Fetch video data
                             video_response = requests.get(video_url)
                             if video_response.status_code == 200:
                                 video_data = video_response.content
@@ -229,7 +225,6 @@ Cinematic, 16:9, high quality, professional."""
                                 st.success("✅ Video generated successfully!")
                                 st.markdown("---")
                                 
-                                # Display video
                                 st.markdown(f"""
                                 <div class="video-container">
                                     <video controls autoplay>
@@ -239,7 +234,6 @@ Cinematic, 16:9, high quality, professional."""
                                 </div>
                                 """, unsafe_allow_html=True)
                                 
-                                # Download button
                                 st.download_button(
                                     label="⬇️ Download Video (MP4)",
                                     data=video_data,
@@ -271,7 +265,8 @@ with col2:
     <div class="info-box">
         <h3>📌 Instructions</h3>
         <ol>
-            <li>Your API token is already pre‑filled.</li>
+            <li>Your API token will be loaded from secrets if set.</li>
+            <li>You can also paste it manually.</li>
             <li>Edit the prompt if needed (or keep the default).</li>
             <li>Click "Generate Video".</li>
             <li>Wait 2-5 minutes for the AI to create your video.</li>

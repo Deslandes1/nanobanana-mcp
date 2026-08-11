@@ -3,6 +3,10 @@ import base64
 import requests
 import time
 
+# ---------- YOUR REPLICATE API TOKEN ----------
+# For production, use st.secrets["REPLICATE_API_TOKEN"] instead of hardcoding.
+REPLICATE_TOKEN = "r8_K8YXqSr0sGrvE96jG9haVUkM5Ky5EJK1lsH2R"
+
 # ---------- CHECK IF REPLICATE IS INSTALLED ----------
 try:
     import replicate
@@ -134,9 +138,9 @@ SCRIPT = """HCC : Haiti Culture Connection. Le premier label de l'histoire du HM
 
 # ---------- SIDEBAR ----------
 with st.sidebar:
-    st.markdown("## 🔑 Replicate API Token")
-    st.markdown("Get your token from [replicate.com](https://replicate.com)")
-    api_token = st.text_input("Enter your Replicate API token", type="password")
+    st.markdown("## 🔑 API Token (pre‑filled)")
+    # Pre-fill with the provided token, but allow override
+    token_input = st.text_input("Replicate API Token", value=REPLICATE_TOKEN, type="password")
     st.markdown("---")
     st.markdown("## 📋 Script Preview")
     with st.expander("Click to view the full script"):
@@ -189,15 +193,17 @@ Cinematic, 16:9, high quality, professional."""
         st.info("💡 Your requirements.txt should contain: streamlit, replicate, requests")
     else:
         if st.button("🚀 Generate Video", use_container_width=True):
-            if not api_token:
-                st.error("❌ Please enter your Replicate API token in the sidebar.")
+            # Use the token from the input (or fallback to REPLICATE_TOKEN if left empty)
+            token_to_use = token_input.strip() or REPLICATE_TOKEN
+            if not token_to_use:
+                st.error("❌ Please enter your Replicate API token.")
             else:
                 try:
                     # Set the API token
-                    replicate.Client(api_token=api_token)
+                    replicate.Client(api_token=token_to_use)
                     
                     with st.spinner("🎬 Generating video... This may take 2-5 minutes."):
-                        # Run the model – using the correct model name
+                        # Run the model
                         output = replicate.run(
                             "anotherjesse/zeroscope-v2-xl",
                             input={
@@ -265,8 +271,7 @@ with col2:
     <div class="info-box">
         <h3>📌 Instructions</h3>
         <ol>
-            <li>Get a free Replicate API token (sign up at replicate.com).</li>
-            <li>Paste it in the sidebar.</li>
+            <li>Your API token is already pre‑filled.</li>
             <li>Edit the prompt if needed (or keep the default).</li>
             <li>Click "Generate Video".</li>
             <li>Wait 2-5 minutes for the AI to create your video.</li>

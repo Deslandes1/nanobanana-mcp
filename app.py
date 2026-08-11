@@ -199,7 +199,8 @@ Cinematic, 16:9, high quality, professional."""
                 st.error("❌ Please enter your Replicate API token or set it in secrets.")
             else:
                 try:
-                    replicate.Client(api_token=token_to_use)
+                    # ✅ FIX: Set the token globally for replicate
+                    replicate.api_token = token_to_use
                     
                     with st.spinner("🎬 Generating video... This may take 2-5 minutes."):
                         output = replicate.run(
@@ -247,7 +248,10 @@ Cinematic, 16:9, high quality, professional."""
                             st.warning("⚠️ No video URL received. Try again.")
                 except Exception as e:
                     st.error(f"❌ Error: {str(e)}")
-                    st.info("💡 Make sure your Replicate token is valid and you have credits.")
+                    if "401" in str(e) or "Unauthenticated" in str(e):
+                        st.info("🔑 Your Replicate token may be invalid or expired. Please check your token.")
+                    else:
+                        st.info("💡 Make sure your Replicate token is valid and you have credits.")
 
     # Closing cards
     st.markdown("""

@@ -1,9 +1,14 @@
 import streamlit as st
-import replicate
-import time
 import base64
 import requests
-from io import BytesIO
+import time
+
+# ---------- CHECK IF REPLICATE IS INSTALLED ----------
+try:
+    import replicate
+    REPLICATE_AVAILABLE = True
+except ImportError:
+    REPLICATE_AVAILABLE = False
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(
@@ -179,66 +184,70 @@ Cinematic, 16:9, high quality, professional."""
     
     user_prompt = st.text_area("✏️ Edit your prompt (or use the default)", value=default_prompt, height=200)
 
-    if st.button("🚀 Generate Video", use_container_width=True):
-        if not api_token:
-            st.error("❌ Please enter your Replicate API token in the sidebar.")
-        else:
-            try:
-                # Set the API token
-                replicate.Client(api_token=api_token)
-                
-                with st.spinner("🎬 Generating video... This may take 2-5 minutes."):
-                    # Run the model
-                    output = replicate.run(
-                        "anotherjesse/zeroscope-v2-xl:9f747f5c5b7b8c9c2c8f8f9c9b8c8f8f9a8b8c8d8e8f8g8h8i8j8k8l8m8n8o8p8q8r8s8t8u8v8w8x8y8z",
-                        input={
-                            "prompt": user_prompt,
-                            "num_frames": 60,
-                            "fps": 8,
-                            "width": 576,
-                            "height": 320,
-                            "guidance_scale": 9,
-                            "negative_prompt": "low quality, blurry, distorted"
-                        }
-                    )
+    if not REPLICATE_AVAILABLE:
+        st.error("❌ The 'replicate' package is not installed. Please add `replicate` to your requirements.txt file and redeploy.")
+        st.info("💡 Your requirements.txt should contain: streamlit, replicate, requests")
+    else:
+        if st.button("🚀 Generate Video", use_container_width=True):
+            if not api_token:
+                st.error("❌ Please enter your Replicate API token in the sidebar.")
+            else:
+                try:
+                    # Set the API token
+                    replicate.Client(api_token=api_token)
                     
-                    # The output is a URL to the video
-                    video_url = output
-                    if video_url:
-                        # Fetch video data
-                        video_response = requests.get(video_url)
-                        if video_response.status_code == 200:
-                            video_data = video_response.content
-                            video_base64 = base64.b64encode(video_data).decode()
-                            
-                            st.success("✅ Video generated successfully!")
-                            st.markdown("---")
-                            
-                            # Display video
-                            st.markdown(f"""
-                            <div class="video-container">
-                                <video controls autoplay>
-                                    <source src="data:video/mp4;base64,{video_base64}" type="video/mp4">
-                                    Your browser does not support the video tag.
-                                </video>
-                            </div>
-                            """, unsafe_allow_html=True)
-                            
-                            # Download button
-                            st.download_button(
-                                label="⬇️ Download Video (MP4)",
-                                data=video_data,
-                                file_name="HCC_CEO_Jean_Charles_RJ.mp4",
-                                mime="video/mp4",
-                                use_container_width=True
-                            )
+                    with st.spinner("🎬 Generating video... This may take 2-5 minutes."):
+                        # Run the model – using the correct model name
+                        output = replicate.run(
+                            "anotherjesse/zeroscope-v2-xl",
+                            input={
+                                "prompt": user_prompt,
+                                "num_frames": 60,
+                                "fps": 8,
+                                "width": 576,
+                                "height": 320,
+                                "guidance_scale": 9,
+                                "negative_prompt": "low quality, blurry, distorted"
+                            }
+                        )
+                        
+                        # The output is a URL to the video
+                        video_url = output
+                        if video_url:
+                            # Fetch video data
+                            video_response = requests.get(video_url)
+                            if video_response.status_code == 200:
+                                video_data = video_response.content
+                                video_base64 = base64.b64encode(video_data).decode()
+                                
+                                st.success("✅ Video generated successfully!")
+                                st.markdown("---")
+                                
+                                # Display video
+                                st.markdown(f"""
+                                <div class="video-container">
+                                    <video controls autoplay>
+                                        <source src="data:video/mp4;base64,{video_base64}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                # Download button
+                                st.download_button(
+                                    label="⬇️ Download Video (MP4)",
+                                    data=video_data,
+                                    file_name="HCC_CEO_Jean_Charles_RJ.mp4",
+                                    mime="video/mp4",
+                                    use_container_width=True
+                                )
+                            else:
+                                st.error("❌ Failed to download the generated video.")
                         else:
-                            st.error("❌ Failed to download the generated video.")
-                    else:
-                        st.warning("⚠️ No video URL received. Try again.")
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
-                st.info("💡 Make sure your Replicate token is valid and you have credits.")
+                            st.warning("⚠️ No video URL received. Try again.")
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
+                    st.info("💡 Make sure your Replicate token is valid and you have credits.")
 
     # Closing cards
     st.markdown("""
